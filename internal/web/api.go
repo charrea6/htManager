@@ -14,6 +14,10 @@ type DeviceProfileResponse struct {
 	Profile string `json:"profile"`
 }
 
+type DeviceTopicValues struct {
+	Values *devices.TopicsValues `json:"values"`
+}
+
 func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 	group.GET("/devices", func(context *gin.Context) {
 		context.JSON(http.StatusOK, devices.GetDevices())
@@ -52,6 +56,25 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 			context.Status(http.StatusNotFound)
 		} else {
 			context.JSON(http.StatusOK, DeviceProfileResponse{Profile: *profile})
+		}
+	})
+
+	group.GET("/devices/:deviceId/topics", func(context *gin.Context) {
+		deviceId := context.Param("deviceId")
+		if topics := devices.GetDeviceTopics(deviceId); topics == nil {
+			context.Status(http.StatusNotFound)
+		} else {
+			context.JSON(http.StatusOK, topics)
+		}
+	})
+	group.GET("/devices/:deviceId/topics/values", func(context *gin.Context) {
+		deviceId := context.Param("deviceId")
+		if values := devices.GetDeviceTopicValues(deviceId); values == nil {
+			context.Status(http.StatusNotFound)
+		} else {
+			context.JSON(http.StatusOK, DeviceTopicValues{
+				Values: values,
+			})
 		}
 	})
 }

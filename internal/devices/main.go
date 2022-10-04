@@ -22,13 +22,17 @@ type Devices interface {
 	GetDeviceDiag(deviceId string) *DeviceDiag
 	GetDeviceStatus(deviceId string) *string
 	GetDeviceProfile(deviceId string) *string
+	GetDeviceTopics(deviceId string) *TopicsInfo
+	GetDeviceTopicValues(deviceId string) *TopicsValues
 }
 
 type devices struct {
-	devicesInfo    map[string]RawDeviceInfo
-	devicesDiag    map[string]DeviceDiag
-	devicesStatus  map[string]string
-	devicesProfile map[string]string
+	info        map[string]RawDeviceInfo
+	diag        map[string]DeviceDiag
+	status      map[string]string
+	profile     map[string]string
+	topicInfo   map[string]TopicsInfo
+	topicValues map[string]TopicsValues
 }
 
 var deviceTopicRegExp = regexp.MustCompile("homething/([0-9a-f]+)/device/(.*)")
@@ -36,10 +40,12 @@ var topicsRegExp = regexp.MustCompile("homething/([0-9a-f]+)/(.*)")
 
 func NewDevices(connection string) Devices {
 	devices := &devices{
-		devicesInfo:    make(map[string]RawDeviceInfo),
-		devicesDiag:    make(map[string]DeviceDiag),
-		devicesStatus:  make(map[string]string),
-		devicesProfile: make(map[string]string),
+		info:        map[string]RawDeviceInfo{},
+		diag:        map[string]DeviceDiag{},
+		status:      map[string]string{},
+		profile:     map[string]string{},
+		topicInfo:   map[string]TopicsInfo{},
+		topicValues: map[string]TopicsValues{},
 	}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(connection)
@@ -69,10 +75,10 @@ func (d *devices) handleMessage(client mqtt.Client, msg mqtt.Message) {
 }
 
 func (d *devices) GetDevices() []DeviceInfo {
-	deviceArray := make([]DeviceInfo, 0, len(d.devicesInfo))
-	for deviceId, rawDevice := range d.devicesInfo {
+	deviceArray := make([]DeviceInfo, 0, len(d.info))
+	for deviceId, rawDevice := range d.info {
 		var lastSeen *time.Time
-		if diag, ok := d.devicesDiag[deviceId]; ok {
+		if diag, ok := d.diag[deviceId]; ok {
 			lastSeen = diag.LastSeen
 		}
 		deviceArray = append(deviceArray, rawDevice.toDeviceInfo(deviceId, lastSeen))
@@ -81,9 +87,9 @@ func (d *devices) GetDevices() []DeviceInfo {
 }
 
 func (d *devices) GetDeviceInfo(deviceId string) *DeviceInfo {
-	if rawDevice, ok := d.devicesInfo[deviceId]; ok {
+	if rawDevice, ok := d.info[deviceId]; ok {
 		var lastSeen *time.Time
-		if diag, ok := d.devicesDiag[deviceId]; ok {
+		if diag, ok := d.diag[deviceId]; ok {
 			lastSeen = diag.LastSeen
 		}
 
@@ -94,13 +100,13 @@ func (d *devices) GetDeviceInfo(deviceId string) *DeviceInfo {
 }
 
 func (d *devices) isDeviceKnown(deviceId string) bool {
-	_, ok := d.devicesInfo[deviceId]
+	_, ok := d.info[deviceId]
 	return ok
 }
 
 func (d *devices) GetDeviceDiag(deviceId string) *DeviceDiag {
 	if d.isDeviceKnown(deviceId) {
-		if diag, ok := d.devicesDiag[deviceId]; ok {
+		if diag, ok := d.diag[deviceId]; ok {
 			return &diag
 		}
 	}
@@ -109,7 +115,7 @@ func (d *devices) GetDeviceDiag(deviceId string) *DeviceDiag {
 
 func (d *devices) GetDeviceStatus(deviceId string) *string {
 	if d.isDeviceKnown(deviceId) {
-		if status, ok := d.devicesStatus[deviceId]; ok {
+		if status, ok := d.status[deviceId]; ok {
 			return &status
 		}
 	}
@@ -118,8 +124,26 @@ func (d *devices) GetDeviceStatus(deviceId string) *string {
 
 func (d *devices) GetDeviceProfile(deviceId string) *string {
 	if d.isDeviceKnown(deviceId) {
-		if profile, ok := d.devicesProfile[deviceId]; ok {
+		if profile, ok := d.profile[deviceId]; ok {
 			return &profile
+		}
+	}
+	return nil
+}
+
+func (d *devices) GetDeviceTopics(deviceId string) *TopicsInfo {
+	if d.isDeviceKnown(deviceId) {
+		if topics, ok := d.topicInfo[deviceId]; ok {
+			return &topics
+		}
+	}
+	return nil
+}
+
+func (d *devices) GetDeviceTopicValues(deviceId string) *TopicsValues {
+	if d.isDeviceKnown(deviceId) {
+		if values, ok := d.topicValues[deviceId]; ok {
+			return &values
 		}
 	}
 	return nil
