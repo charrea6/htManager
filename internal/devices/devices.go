@@ -106,6 +106,7 @@ func (d *devices) handleDeviceMessageDiag(deviceId string, payload []byte) {
 		now := time.Now()
 		diag.LastSeen = &now
 		d.diag[deviceId] = diag
+		fmt.Printf("%s: Last seen %v\n", deviceId, now)
 	}
 }
 
