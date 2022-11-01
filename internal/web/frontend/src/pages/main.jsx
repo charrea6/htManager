@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import { useNavigate } from "react-router-dom";
 
-import {Box, DataTable, Text, Button, PageHeader, Anchor, PageContent, Page} from 'grommet';
+import {Box, DataTable, Text, Button, PageHeader, PageContent, Page} from 'grommet';
 import { Refresh } from 'grommet-icons';
 
 const columns = [
@@ -55,7 +55,6 @@ const RefreshButton = ({onRefresh}) => {
             setTimeLeft(refreshAfter);
             return;
         }
-        console.log("useEffect running, ", timeLeft)
 
         // save intervalId to clear the interval when the
         // component re-renders
@@ -105,21 +104,19 @@ export const Main = () => {
       return (
           <Page>
               <PageContent>
-                  <PageHeader title="Devices"/>
-                  <Box fill="horizontal" pad="large">
-                      <Box align="end">
-                          <RefreshButton onRefresh={loadData}/>
-                      </Box>
-                    <Box fill="horizontal">
-                      <DataTable
-                        columns={columns}
-                        data={data}
-                        sort={sort}
-                        onSort={setSort}
-                        onClickRow={rowClicked}
-                      />
-                    </Box>
-                  </Box>
+                  <PageHeader title="Devices" actions={<Box align="end">
+                      <RefreshButton onRefresh={loadData}/>
+                  </Box>}/>
+                <Box fill="horizontal">
+                  <DataTable
+                    columns={columns}
+                    data={data}
+                    sort={sort}
+                    onSort={setSort}
+                    onClickRow={rowClicked}
+                  />
+                </Box>
+
               </PageContent>
           </Page>
       );
