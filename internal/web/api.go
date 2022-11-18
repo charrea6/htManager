@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/gin-gonic/gin"
 	"htManager/internal/devices"
+	"io"
 	"net/http"
 )
 
@@ -16,6 +17,14 @@ type DeviceProfileResponse struct {
 
 type DeviceTopicValues struct {
 	Values *devices.TopicsValues `json:"values"`
+}
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+type CommandResponse struct {
+	Status string `json:"status"`
 }
 
 func initAPI(group *gin.RouterGroup, devices devices.Devices) {
@@ -56,6 +65,39 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 			context.Status(http.StatusNotFound)
 		} else {
 			context.JSON(http.StatusOK, DeviceProfileResponse{Profile: *profile})
+		}
+	})
+
+	group.POST("/devices/:deviceId/profile", func(context *gin.Context) {
+		deviceId := context.Param("deviceId")
+		if data, err := io.ReadAll(context.Request.Body); err == nil {
+			profile := string(data)
+			if err := devices.SetDeviceProfile(deviceId, profile); err != nil {
+				context.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			} else {
+				context.JSON(http.StatusOK, DeviceProfileResponse{Profile: profile})
+			}
+		} else {
+			context.Status(http.StatusBadRequest)
+		}
+	})
+
+	group.POST("/devices/:deviceId/command", func(context *gin.Context) {
+		deviceId := context.Param("deviceId")
+		switch context.Request.FormValue("command") {
+		case "reboot":
+			if err := devices.RebootDevice(deviceId); err != nil {
+				context.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			} else {
+				context.JSON(http.StatusOK, CommandResponse{Status: "device reboot sent"})
+			}
+		case "update":
+			version := context.Request.FormValue("version")
+			if err := devices.UpdateDevice(deviceId, version); err != nil {
+				context.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+			} else {
+				context.JSON(http.StatusOK, CommandResponse{Status: "device update sent"})
+			}
 		}
 	})
 

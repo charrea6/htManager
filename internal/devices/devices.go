@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/fxamacker/cbor/v2"
-	"gopkg.in/yaml.v2"
 	"strings"
 	"time"
 )
@@ -32,15 +31,6 @@ type DeviceDiag struct {
 	Uptime   int                   `json:"uptime"`
 	MemInfo  DeviceDiagMemInfo     `json:"mem"`
 	TaskInfo []DeviceDiagStackInfo `json:"tasks,omitempty"`
-}
-
-type ProfileEntry map[string]any
-type ProfileEntries []ProfileEntry
-
-type Profile struct {
-	_       struct{} `cbor:",toarray"`
-	Version int
-	Profile map[string]ProfileEntries
 }
 
 type TopicInfo map[string]int
@@ -133,12 +123,8 @@ func (d *devices) handleDeviceMessageTopics(deviceId string, payload []byte) {
 }
 
 func (d *devices) handleDeviceMessageProfile(deviceId string, payload []byte) {
-	profile := Profile{}
-	if err := cbor.Unmarshal(payload, &profile); err == nil {
-		fmt.Printf("Profile: %v\n", profile)
-		if profileBytes, err := yaml.Marshal(&profile.Profile); err == nil {
-			d.profile[deviceId] = string(profileBytes)
-		}
+	if profile, err := decodeProfile(payload); err == nil {
+		d.profile[deviceId] = profile
 	} else {
 		fmt.Printf("Profile: CBOR unmarshal failed %v\n", err)
 	}

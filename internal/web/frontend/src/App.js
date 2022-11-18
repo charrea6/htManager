@@ -8,6 +8,7 @@ import {
 import { Root } from './root';
 import { Main } from './pages/main';
 import { Device } from './pages/device';
+import { EditProfile } from './pages/profile';
 import { ErrorPage } from './error-page';
 
 
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       {
         path: 'device/:deviceId',
         element: <Device />
+      },
+      {
+        path: 'device/:deviceId/profile',
+        element: <EditProfile />
       }
     ]
   },

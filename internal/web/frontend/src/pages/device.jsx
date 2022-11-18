@@ -1,6 +1,7 @@
 import {useParams, useNavigate} from 'react-router-dom';
 import {
     Box,
+    Button,
     Text,
     NameValuePair,
     NameValueList,
@@ -10,6 +11,7 @@ import {
     Anchor,
     Meter
 } from 'grommet';
+import {Update, Upload, Edit, Trash} from "grommet-icons";
 import {useEffect, useState} from "react";
 import * as dayjs from "dayjs";
 import * as relativeTime from "dayjs/plugin/relativeTime";
@@ -69,9 +71,6 @@ export function Device() {
     }
     const [info, setInfo] = useState({capabilities:[]});
     const [diag, setDiag] = useState({lastSeen: null, uptime: "", memInfo: {free: 0, low: 0}});
-
-
-
     useEffect(() => {
         const loadInfo = () => {
             fetch(`/api/devices/${deviceId}/info`).then((response) =>{
@@ -99,13 +98,17 @@ export function Device() {
 
     return <Page>
         <PageContent>
-            <PageHeader title="Device Details" parent={<Anchor label="Back" onClick={toRoot}/>}/>
+            <PageHeader title={info.description} parent={<Anchor label="Back" onClick={toRoot}/>} actions={<Box direction="row" gap="xsmall">
+                <Button plain={false} icon={<Update/>} title={"Reboot"}/>
+                <Button plain={false} icon={<Upload/>} title={"Update"}/>
+                <Button plain={false} icon={<Edit/>} title={"Edit Profile"} onClick={ ()=>{ navigate(`/device/${deviceId}/profile`);} }/>
+                <Button plain={false} icon={<Trash/>} title={"Delete device"}/>
+            </Box> }/>
             <NameValueList valueProps={{ width: 'large' }}>
                 <NameValuePair name="ID">{deviceId}</NameValuePair>
-                <NameValuePair name="Description">{info.description}</NameValuePair>
                 <NameValuePair name="Version">{info.version}</NameValuePair>
                 <NameValuePair name="Capabilities">{info.capabilities.join(', ')}</NameValuePair>
-                <NameValuePair name="IP Address">{info.ip_addr}</NameValuePair>
+                <NameValuePair name="IP Address"><a href={"http://" + info.ip_addr}>{info.ip_addr}</a></NameValuePair>
                 <NameValuePair name="Uptime">{diag.uptime}<LastSeen lastSeen={diag.lastSeen}/></NameValuePair>
                 <NameValuePair name="Memory Free"><MemoryInfo free={diag.memInfo.free} low={diag.memInfo.low}/> </NameValuePair>
             </NameValueList>

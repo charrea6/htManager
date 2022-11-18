@@ -22,11 +22,15 @@ type Devices interface {
 	GetDeviceDiag(deviceId string) *DeviceDiag
 	GetDeviceStatus(deviceId string) *string
 	GetDeviceProfile(deviceId string) *string
+	SetDeviceProfile(deviceId string, profile string) error
 	GetDeviceTopics(deviceId string) *TopicsInfo
 	GetDeviceTopicValues(deviceId string) *TopicsValues
+	RebootDevice(deviceId string) error
+	UpdateDevice(deviceId string, version string) error
 }
 
 type devices struct {
+	client      mqtt.Client
 	info        map[string]RawDeviceInfo
 	diag        map[string]DeviceDiag
 	status      map[string]string
@@ -53,8 +57,8 @@ func NewDevices(connection string) Devices {
 	opts.SetDefaultPublishHandler(devices.handleMessage)
 	opts.SetAutoReconnect(true)
 	opts.OnConnect = devices.handleConnect
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
+	devices.client = mqtt.NewClient(opts)
+	if token := devices.client.Connect(); token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
 	return devices
@@ -131,6 +135,22 @@ func (d *devices) GetDeviceProfile(deviceId string) *string {
 	return nil
 }
 
+func (d *devices) SetDeviceProfile(deviceId string, profile string) error {
+	profileBin, err := encodeProfile(profile)
+	if err != nil {
+		return fmt.Errorf("failed to encode profile: %s", err)
+	}
+	command := append([]byte("setprofile\x00"), profileBin...)
+	t := d.client.Publish(fmt.Sprintf("homething/%s/device/ctrl", deviceId), 0, false, command)
+	if !t.WaitTimeout(10 * time.Second) {
+		return fmt.Errorf("timeout waiting for response from broker")
+	}
+	if err := t.Error(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (d *devices) GetDeviceTopics(deviceId string) *TopicsInfo {
 	if d.isDeviceKnown(deviceId) {
 		if topics, ok := d.topicInfo[deviceId]; ok {
@@ -147,4 +167,19 @@ func (d *devices) GetDeviceTopicValues(deviceId string) *TopicsValues {
 		}
 	}
 	return nil
+}
+
+func (d *devices) RebootDevice(deviceId string) error {
+	t := d.client.Publish(fmt.Sprintf("homething/%s/device/ctrl", deviceId), 0, false, []byte("reboot"))
+	if !t.WaitTimeout(10 * time.Second) {
+		return fmt.Errorf("timeout waiting for response from broker")
+	}
+	if err := t.Error(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *devices) UpdateDevice(deviceId string, version string) error {
+	return fmt.Errorf("not implemented")
 }
