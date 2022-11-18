@@ -71,6 +71,14 @@ export function Device() {
     }
     const [info, setInfo] = useState({capabilities:[]});
     const [diag, setDiag] = useState({lastSeen: null, uptime: "", memInfo: {free: 0, low: 0}});
+    let reboot = () => {
+        const data = new URLSearchParams();
+        data.append("command", "restart")
+        fetch(`/api/devices/${deviceId}/command`, {method: 'post', body: data}).then((response) =>{
+            return response.json();
+        })
+    }
+
     useEffect(() => {
         const loadInfo = () => {
             fetch(`/api/devices/${deviceId}/info`).then((response) =>{
@@ -99,7 +107,7 @@ export function Device() {
     return <Page>
         <PageContent>
             <PageHeader title={info.description} parent={<Anchor label="Back" onClick={toRoot}/>} actions={<Box direction="row" gap="xsmall">
-                <Button plain={false} icon={<Update/>} title={"Reboot"}/>
+                <Button plain={false} icon={<Update/>} title={"Reboot"} onClick={reboot}/>
                 <Button plain={false} icon={<Upload/>} title={"Update"}/>
                 <Button plain={false} icon={<Edit/>} title={"Edit Profile"} onClick={ ()=>{ navigate(`/device/${deviceId}/profile`);} }/>
                 <Button plain={false} icon={<Trash/>} title={"Delete device"}/>

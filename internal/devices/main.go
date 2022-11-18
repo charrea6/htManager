@@ -170,7 +170,7 @@ func (d *devices) GetDeviceTopicValues(deviceId string) *TopicsValues {
 }
 
 func (d *devices) RebootDevice(deviceId string) error {
-	t := d.client.Publish(fmt.Sprintf("homething/%s/device/ctrl", deviceId), 0, false, []byte("reboot"))
+	t := d.client.Publish(fmt.Sprintf("homething/%s/device/ctrl", deviceId), 0, false, []byte("restart"))
 	if !t.WaitTimeout(10 * time.Second) {
 		return fmt.Errorf("timeout waiting for response from broker")
 	}

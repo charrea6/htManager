@@ -30,7 +30,6 @@ export function EditProfile() {
                 setStatus("Profile update failed! " + response.error);
             }
             } ).catch(() => { setStatus('Profile update failed')});
-
     }
 
     const [info, setInfo] = useState({capabilities:[]});

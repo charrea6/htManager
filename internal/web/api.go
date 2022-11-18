@@ -85,7 +85,7 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 	group.POST("/devices/:deviceId/command", func(context *gin.Context) {
 		deviceId := context.Param("deviceId")
 		switch context.Request.FormValue("command") {
-		case "reboot":
+		case "restart":
 			if err := devices.RebootDevice(deviceId); err != nil {
 				context.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
 			} else {
@@ -98,6 +98,8 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 			} else {
 				context.JSON(http.StatusOK, CommandResponse{Status: "device update sent"})
 			}
+		default:
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Error: "unknown command"})
 		}
 	})
 
