@@ -10,7 +10,10 @@ import { Main } from './pages/main';
 import { Device } from './pages/device';
 import { EditProfile } from './pages/profile';
 import { ErrorPage } from './error-page';
+import {DeviceList} from "./Devices";
 
+
+const deviceList = new DeviceList();
 
 const router = createBrowserRouter([
   {
@@ -20,11 +23,11 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Main />,
+        element: <Main devices={deviceList}/>,
       },
       {
         path: 'device/:deviceId',
-        element: <Device />
+        element: <Device devices={deviceList}/>
       },
       {
         path: 'device/:deviceId/profile',

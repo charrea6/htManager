@@ -3,8 +3,8 @@ package devices
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/fxamacker/cbor/v2"
+	"log"
 	"strings"
 	"time"
 )
@@ -87,6 +87,7 @@ func (d *devices) handleDeviceMessageInfo(deviceId string, payload []byte) {
 	info := RawDeviceInfo{}
 	if json.Unmarshal(payload, &info) == nil {
 		d.info[deviceId] = info
+		d.sendUpdateMessage(deviceId, InfoUpdateMessage, info)
 	}
 }
 
@@ -96,12 +97,15 @@ func (d *devices) handleDeviceMessageDiag(deviceId string, payload []byte) {
 		now := time.Now()
 		diag.LastSeen = &now
 		d.diag[deviceId] = diag
-		fmt.Printf("%s: Last seen %v\n", deviceId, now)
+
+		d.sendUpdateMessage(deviceId, DiagUpdateMessage, diag)
 	}
 }
 
 func (d *devices) handleDeviceMessageStatus(deviceId string, payload []byte) {
-	d.status[deviceId] = string(payload)
+	status := string(payload)
+	d.status[deviceId] = status
+	d.sendUpdateMessage(deviceId, StatusUpdateMessage, status)
 }
 
 func (d *devices) handleDeviceMessageTopics(deviceId string, payload []byte) {
@@ -118,7 +122,7 @@ func (d *devices) handleDeviceMessageTopics(deviceId string, payload []byte) {
 		}
 		d.topicInfo[deviceId] = topicsInfo
 	} else {
-		fmt.Printf("Topics: CBOR unmarshal failed %v\n", err)
+		log.Printf("Topics: CBOR unmarshal failed %v\n", err)
 	}
 }
 
@@ -126,8 +130,22 @@ func (d *devices) handleDeviceMessageProfile(deviceId string, payload []byte) {
 	if profile, err := decodeProfile(payload); err == nil {
 		d.profile[deviceId] = profile
 	} else {
-		fmt.Printf("Profile: CBOR unmarshal failed %v\n", err)
+		log.Printf("Profile: CBOR unmarshal failed %v\n", err)
 	}
+}
+
+func (d *devices) sendUpdateMessage(deviceId string, updateType string, data any) {
+	event := DeviceUpdateEvent{
+		Id:   deviceId,
+		Type: updateType,
+		Data: data,
+	}
+	log.Printf("Sending update message: %s for %s", updateType, deviceId)
+	d.lock.Lock()
+	for _, client := range d.updateClients {
+		client.DeviceUpdated(event)
+	}
+	d.lock.Unlock()
 }
 
 func (d *RawDeviceInfo) toDeviceInfo(deviceId string, lastSeen *time.Time) DeviceInfo {

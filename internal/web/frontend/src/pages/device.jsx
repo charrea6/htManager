@@ -63,7 +63,7 @@ function MemoryInfo({free, low}) {
         </Box>);
 }
 
-export function Device() {
+export function Device({devices}) {
     let { deviceId } = useParams();
     let navigate = useNavigate();
     let toRoot = () => {
@@ -79,30 +79,66 @@ export function Device() {
         })
     }
 
+
+
+
+    // useEffect(() => {
+    //     const loadInfo = () => {
+    //         fetch(`/api/devices/${deviceId}/info`).then((response) =>{
+    //             return response.json();
+    //         }).then((response) =>{
+    //             setInfo(response);
+    //         })
+    //     };
+    //
+    //     loadInfo();
+    //
+    // }, [deviceId]);
+    //
+    // useEffect(() => {
+    //     const loadDiag = () => {
+    //         fetch(`/api/devices/${deviceId}/diag`).then((response) =>{
+    //             return response.json();
+    //         }).then((response) =>{
+    //             setDiag({
+    //                 uptime: humanizeDuration(response.uptime * 1000),
+    //                 lastSeen: response.lastSeen,
+    //                 memInfo: response.mem
+    //             });
+    //         })
+    //     };
+    //
+    //     loadDiag();
+    //     // save intervalId to clear the interval when the
+    //     // component re-renders
+    //     const intervalId = setInterval(() => {
+    //         loadDiag();
+    //     }, 30000);
+    //
+    //     // clear interval on re-render to avoid memory leaks
+    //     return () => clearInterval(intervalId);
+    //     // add timeLeft as a dependency to re-rerun the effect
+    //     // when we update it
+    // }, [deviceId]);
     useEffect(() => {
-        const loadInfo = () => {
-            fetch(`/api/devices/${deviceId}/info`).then((response) =>{
-                return response.json();
-            }).then((response) =>{
-                setInfo(response);
-            })
-        };
-
-        const loadDiag = () => {
-            fetch(`/api/devices/${deviceId}/diag`).then((response) =>{
-                return response.json();
-            }).then((response) =>{
-                setDiag({
-                    uptime: humanizeDuration(response.uptime * 1000),
-                    lastSeen: response.lastSeen,
-                    memInfo: response.mem
-                });
-            })
-        };
-
-        loadInfo();
-        loadDiag();
-    }, [deviceId]);
+        devices.selectDevice(deviceId, (msg, data) => {
+            switch (msg) {
+                case 'info':
+                    setInfo(data);
+                    break
+                case 'diag':
+                    setDiag({
+                        uptime: humanizeDuration(data.uptime * 1000),
+                        lastSeen: data.lastSeen,
+                        memInfo: data.mem
+                    });
+                    break;
+                default:
+                    break;
+            }
+        })
+        return () => { devices.unselectDevice(deviceId)};
+    }, [deviceId, devices]);
 
     return <Page>
         <PageContent>

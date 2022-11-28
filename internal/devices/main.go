@@ -4,7 +4,17 @@ import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"regexp"
+	"sync"
 	"time"
+)
+
+const DeviceUpdateTopic = "device:update"
+
+const (
+	InfoUpdateMessage    = "info"
+	DiagUpdateMessage    = "diag"
+	ProfileUpdateMessage = "profile"
+	StatusUpdateMessage  = "status"
 )
 
 type DeviceInfo struct {
@@ -14,6 +24,16 @@ type DeviceInfo struct {
 	IPAddr       string     `json:"ip_addr"`
 	Version      string     `json:"version"`
 	Capabilities []string   `json:"capabilities"`
+}
+
+type DeviceUpdateEvent struct {
+	Id   string `json:"id"`
+	Type string `json:"type"`
+	Data any    `json:"data"`
+}
+
+type UpdateNotificationClient interface {
+	DeviceUpdated(event DeviceUpdateEvent)
 }
 
 type Devices interface {
@@ -27,16 +47,20 @@ type Devices interface {
 	GetDeviceTopicValues(deviceId string) *TopicsValues
 	RebootDevice(deviceId string) error
 	UpdateDevice(deviceId string, version string) error
+	RegisterUpdateNotificationClient(client UpdateNotificationClient)
+	UnregisterUpdateNotificationClient(client UpdateNotificationClient)
 }
 
 type devices struct {
-	client      mqtt.Client
-	info        map[string]RawDeviceInfo
-	diag        map[string]DeviceDiag
-	status      map[string]string
-	profile     map[string]string
-	topicInfo   map[string]TopicsInfo
-	topicValues map[string]TopicsValues
+	client        mqtt.Client
+	info          map[string]RawDeviceInfo
+	diag          map[string]DeviceDiag
+	status        map[string]string
+	profile       map[string]string
+	topicInfo     map[string]TopicsInfo
+	topicValues   map[string]TopicsValues
+	lock          sync.Mutex
+	updateClients []UpdateNotificationClient
 }
 
 var deviceTopicRegExp = regexp.MustCompile("homething/([0-9a-f]+)/device/(.*)")
@@ -182,4 +206,21 @@ func (d *devices) RebootDevice(deviceId string) error {
 
 func (d *devices) UpdateDevice(deviceId string, version string) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (d *devices) RegisterUpdateNotificationClient(client UpdateNotificationClient) {
+	d.lock.Lock()
+	d.updateClients = append(d.updateClients, client)
+	d.lock.Unlock()
+}
+
+func (d *devices) UnregisterUpdateNotificationClient(client UpdateNotificationClient) {
+	d.lock.Lock()
+	for idx, value := range d.updateClients {
+		if value == client {
+			d.updateClients[idx] = d.updateClients[len(d.updateClients)-1]
+			d.updateClients = d.updateClients[:len(d.updateClients)-1]
+		}
+	}
+	d.lock.Unlock()
 }

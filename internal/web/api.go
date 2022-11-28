@@ -1,9 +1,12 @@
 package web
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"htManager/internal/devices"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -25,6 +28,12 @@ type ErrorResponse struct {
 
 type CommandResponse struct {
 	Status string `json:"status"`
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func initAPI(group *gin.RouterGroup, devices devices.Devices) {
@@ -120,5 +129,18 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 				Values: values,
 			})
 		}
+	})
+
+	group.GET("/ws", func(context *gin.Context) {
+		//upgrade get request to websocket protocol
+		ws, err := upgrader.Upgrade(context.Writer, context.Request, nil)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		defer ws.Close()
+		log.Println("Handing over to WebSocketConnection")
+		connection := WebSocketConnection{ws: ws, devices: devices}
+		connection.handleConnection()
 	})
 }

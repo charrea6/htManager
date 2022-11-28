@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"fmt"
 	"github.com/fxamacker/cbor/v2"
 	"gopkg.in/yaml.v2"
 )
@@ -18,8 +17,6 @@ type Profile struct {
 func decodeProfile(payload []byte) (string, error) {
 	profile := Profile{}
 	if err := cbor.Unmarshal(payload, &profile); err == nil {
-		fmt.Printf("Profile: %v\n", profile)
-
 		if profileBytes, err := yaml.Marshal(&profile.Profile); err == nil {
 			return string(profileBytes), nil
 

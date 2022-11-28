@@ -1,8 +1,7 @@
 import React, {useEffect} from 'react';
 import { useNavigate } from "react-router-dom";
 
-import {Box, DataTable, Text, Button, PageHeader, PageContent, Page} from 'grommet';
-import { Refresh } from 'grommet-icons';
+import {Box, DataTable, Text, PageHeader, PageContent, Page} from 'grommet';
 
 const columns = [
     { header: "", property: "lastSeen", search: false, size: "xsmall", align: "center", render: (data) => {
@@ -44,40 +43,7 @@ const Alive = (props) => {
     return <Text>{alive}</Text>;
 }
 
-const RefreshButton = ({onRefresh}) => {
-    const refreshAfter = 30;
-    const [timeLeft, setTimeLeft] = React.useState(refreshAfter);
-
-    useEffect(() => {
-        // exit early when we reach 0
-        if (!timeLeft) {
-            onRefresh();
-            setTimeLeft(refreshAfter);
-            return;
-        }
-
-        // save intervalId to clear the interval when the
-        // component re-renders
-        const intervalId = setInterval(() => {
-            setTimeLeft(timeLeft - 1);
-        }, 1000);
-
-        // clear interval on re-render to avoid memory leaks
-        return () => clearInterval(intervalId);
-        // add timeLeft as a dependency to re-rerun the effect
-        // when we update it
-    }, [timeLeft, onRefresh]);
-    const onClick = () => {
-        onRefresh();
-        setTimeLeft(refreshAfter);
-    }
-    return <Box direction="row">
-        <Text size={"xsmall"} alignSelf={"end"} margin={{right: "small"}}>Refreshing in {timeLeft}s...</Text>
-        <Button label="Refresh" onClick={onClick} icon={<Refresh/>}/>
-    </Box>
-}
-
-export const Main = () => {
+export const Main = ({devices}) => {
       const [sort, setSort] = React.useState({
             property: 'id',
             direction: 'desc',
@@ -85,17 +51,14 @@ export const Main = () => {
       const [data, setData] = React.useState([]);
       const navigate = useNavigate();
 
-      const loadData = () => {
-          fetch("/api/devices").then((response) =>{
-              return response.json();
-          }).then((response) =>{
-              setData((response));
-          })
-      };
-
       useEffect(() => {
-          loadData();
-      }, []);
+          setData(devices.devices);
+
+          devices.deviceListUpdated = (list) => {
+              setData(list);
+          }
+          return () => { devices.deviceListUpdated = null; }
+      }, [devices]);
 
       const rowClicked = (event) => {
         navigate('/device/' + event.datum.id)
@@ -105,7 +68,6 @@ export const Main = () => {
           <Page>
               <PageContent>
                   <PageHeader title="Devices" actions={<Box align="end">
-                      <RefreshButton onRefresh={loadData}/>
                   </Box>}/>
                 <Box fill="horizontal">
                   <DataTable
