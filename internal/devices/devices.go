@@ -87,7 +87,8 @@ func (d *devices) handleDeviceMessageInfo(deviceId string, payload []byte) {
 	info := RawDeviceInfo{}
 	if json.Unmarshal(payload, &info) == nil {
 		d.info[deviceId] = info
-		d.sendUpdateMessage(deviceId, InfoUpdateMessage, info)
+		now := time.Now()
+		d.sendUpdateMessage(deviceId, InfoUpdateMessage, info.toDeviceInfo(deviceId, &now))
 	}
 }
 
