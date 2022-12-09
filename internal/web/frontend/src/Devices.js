@@ -106,7 +106,6 @@ export class DeviceList {
             }
             devices.push(value)
         });
-        devices.push(msg.data);
         this.devices = devices;
         if (this.deviceListUpdated != null) {
             this.deviceListUpdated(this.devices);
