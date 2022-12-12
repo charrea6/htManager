@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
 )
 
 //go:embed frontend/build/*
@@ -14,10 +15,12 @@ var content embed.FS
 func initFrontend(r *gin.Engine) {
 	r.NoRoute(func(c *gin.Context) {
 		rootFS, _ := fs.Sub(content, "frontend/build")
-
-		if _, err := rootFS.Open(c.Request.URL.Path); os.IsNotExist(err) {
-			c.FileFromFS("index.html", http.FS(rootFS))
+		path := strings.TrimPrefix(c.Request.URL.Path, "/")
+		_, err := rootFS.Open(path)
+		if os.IsNotExist(err) {
+			c.FileFromFS("/", http.FS(rootFS))
+		} else {
+			c.FileFromFS(c.Request.URL.Path, http.FS(rootFS))
 		}
-		c.FileFromFS(c.Request.URL.Path, http.FS(rootFS))
 	})
 }
