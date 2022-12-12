@@ -155,13 +155,16 @@ export function Device({devices}) {
                     setValues(data);
                     break;
                 case 'value':
-                    let newValues = {...values};
-                    let itemValues = newValues[data.topic_path[0]];
-                    if (itemValues === undefined) {
-                        itemValues = newValues[data.topic_path[0]] = {}
-                    }
-                    itemValues[data.topic_path[1]] = data.value;
-                    setValues(newValues);
+                    setValues((state) => {
+                            let newValues = {...state};
+                            let itemValues = newValues[data.topic_path[0]];
+                            if (itemValues === undefined) {
+                                itemValues = newValues[data.topic_path[0]] = {}
+                            }
+                            itemValues[data.topic_path[1]] = data.value;
+                            return newValues
+                        }
+                    );
                     break;
                 default:
                     break;
