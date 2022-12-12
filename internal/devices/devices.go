@@ -3,7 +3,6 @@ package devices
 import (
 	"encoding/json"
 	"errors"
-	"github.com/fxamacker/cbor/v2"
 	"log"
 	"strings"
 	"time"
@@ -33,12 +32,16 @@ type DeviceDiag struct {
 	TaskInfo []DeviceDiagStackInfo `json:"tasks,omitempty"`
 }
 
+type RawTopicInfo struct {
+	Name string `json:"name"`
+	Type int    `json:"type"`
+}
+
 type TopicInfo map[string]int
 
 type RawTopicDescription struct {
-	_   struct{} `cbor:",toarray"`
-	Pub TopicInfo
-	Sub TopicInfo
+	Pub []RawTopicInfo `json:"pubs"`
+	Sub []RawTopicInfo `json:"subs"`
 }
 
 type TopicDescription struct {
@@ -46,10 +49,14 @@ type TopicDescription struct {
 	Sub TopicInfo `json:"sub"`
 }
 
+type RawElementTopicInfo struct {
+	Name  string `json:"name"`
+	Index int    `json:"index"`
+}
+
 type RawTopicsInfo struct {
-	_                struct{} `cbor:",toarray"`
-	TopicDescription map[int]RawTopicDescription
-	Topics           map[string]int
+	TopicDescription []RawTopicDescription `json:"descriptions"`
+	Topics           []RawElementTopicInfo `json:"elements"`
 }
 
 type TopicsInfo struct {
@@ -111,19 +118,29 @@ func (d *devices) handleDeviceMessageStatus(deviceId string, payload []byte) {
 
 func (d *devices) handleDeviceMessageTopics(deviceId string, payload []byte) {
 	rawTopicsInfo := RawTopicsInfo{}
-	if err := cbor.Unmarshal(payload, &rawTopicsInfo); err == nil {
+	if deviceId == "5ccf7f0a70dd" {
+		log.Printf("5ccf7f0a70dd: Topics payload %s\n", string(payload))
+	}
+	if err := json.Unmarshal(payload, &rawTopicsInfo); err == nil {
+		if deviceId == "5ccf7f0a70dd" {
+			log.Printf("5ccf7f0a70dd: Topics rawTopicsInfo %q\n", rawTopicsInfo)
+		}
+
 		topicsInfo := TopicsInfo{Topics: make(map[string]TopicDescription)}
-		for name, descriptionId := range rawTopicsInfo.Topics {
-			if rawTopicDescription, ok := rawTopicsInfo.TopicDescription[descriptionId]; ok {
-				topicsInfo.Topics[name] = TopicDescription{
-					Pub: rawTopicDescription.Pub,
-					Sub: rawTopicDescription.Sub,
-				}
+		for _, elementInfo := range rawTopicsInfo.Topics {
+			if elementInfo.Index < 0 || elementInfo.Index > len(rawTopicsInfo.TopicDescription) {
+				continue
+			}
+			rawTopicDescription := rawTopicsInfo.TopicDescription[elementInfo.Index]
+			topicsInfo.Topics[elementInfo.Name] = TopicDescription{
+				Pub: rawTopicDescription.getPubs(),
+				Sub: rawTopicDescription.getSubs(),
 			}
 		}
 		d.topicInfo[deviceId] = topicsInfo
+		d.sendUpdateMessage(deviceId, TopicsUpdateMessage, topicsInfo)
 	} else {
-		log.Printf("Topics: CBOR unmarshal failed %v\n", err)
+		log.Printf("%s: Topics: json unmarshal failed %v\n", deviceId, err)
 	}
 }
 
@@ -131,7 +148,7 @@ func (d *devices) handleDeviceMessageProfile(deviceId string, payload []byte) {
 	if profile, err := decodeProfile(payload); err == nil {
 		d.profile[deviceId] = profile
 	} else {
-		log.Printf("Profile: CBOR unmarshal failed %v\n", err)
+		log.Printf("%s: Profile: json unmarshal failed %v\n", deviceId, err)
 	}
 }
 
@@ -159,6 +176,22 @@ func (d *RawDeviceInfo) toDeviceInfo(deviceId string, lastSeen *time.Time) Devic
 		LastSeen:     lastSeen,
 	}
 	return device
+}
+
+func (td *RawTopicDescription) getPubs() TopicInfo {
+	result := TopicInfo{}
+	for _, info := range td.Pub {
+		result[info.Name] = info.Type
+	}
+	return result
+}
+
+func (td *RawTopicDescription) getSubs() TopicInfo {
+	result := TopicInfo{}
+	for _, info := range td.Sub {
+		result[info.Name] = info.Type
+	}
+	return result
 }
 
 func (t *TopicsInfo) getPubTopicType(topic string) int {

@@ -8,13 +8,12 @@ import (
 	"time"
 )
 
-const DeviceUpdateTopic = "device:update"
-
 const (
-	InfoUpdateMessage    = "info"
-	DiagUpdateMessage    = "diag"
-	ProfileUpdateMessage = "profile"
-	StatusUpdateMessage  = "status"
+	InfoUpdateMessage   = "info"
+	DiagUpdateMessage   = "diag"
+	TopicsUpdateMessage = "topics"
+	ValueUpdateMessage  = "value"
+	StatusUpdateMessage = "status"
 )
 
 type DeviceInfo struct {

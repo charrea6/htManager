@@ -9,7 +9,12 @@ import {
     PageContent,
     PageHeader,
     Anchor,
-    Meter
+    Meter,
+    Table,
+    TableBody,
+    TableHeader,
+    TableRow,
+    TableCell
 } from 'grommet';
 import {Update, Upload, Edit, Trash} from "grommet-icons";
 import {useEffect, useState} from "react";
@@ -63,6 +68,54 @@ function MemoryInfo({free, low}) {
         </Box>);
 }
 
+function AllTopics({alltopics, values}) {
+    let data = Object.entries(alltopics).flatMap(([element, items]) => {
+        let result = [];
+        let first = true;
+        for (const [item, type] of Object.entries(items.pub)) {
+            let itemValues = values[element];
+            let value = "";
+            if (itemValues !== undefined) {
+                value = itemValues[item]
+                switch (type) {
+                    case 6:
+                        value = `${value} °c`;
+                        break;
+                    case 7:
+                        value = `${value} %RH`;
+                        break;
+                    case 8:
+                        value = `${value} KPa`;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            result.push({element: first ? element : "", 'item': item, 'value': value });
+            first = false;
+        }
+        return result;
+    });
+    return <Table>
+        <TableHeader>
+            <TableRow>
+                <TableCell>Element</TableCell>
+                <TableCell>Item</TableCell>
+                <TableCell>Value</TableCell>
+            </TableRow>
+        </TableHeader>
+        <TableBody>
+            { data.map( ({element, item, value}) =>
+                    <TableRow>
+                        <TableCell scope="row">{element}</TableCell>
+                        <TableCell>{item}</TableCell>
+                        <TableCell align="right">{value}</TableCell>
+                    </TableRow>
+            )}
+        </TableBody>
+    </Table>;
+}
+
 export function Device({devices}) {
     let { deviceId } = useParams();
     let navigate = useNavigate();
@@ -71,6 +124,9 @@ export function Device({devices}) {
     }
     const [info, setInfo] = useState({capabilities:[]});
     const [diag, setDiag] = useState({lastSeen: null, uptime: "", memInfo: {free: 0, low: 0}});
+    const [topics, setTopics] = useState({});
+    const [values, setValues] = useState({});
+
     let reboot = () => {
         const data = new URLSearchParams();
         data.append("command", "restart")
@@ -79,47 +135,6 @@ export function Device({devices}) {
         })
     }
 
-
-
-
-    // useEffect(() => {
-    //     const loadInfo = () => {
-    //         fetch(`/api/devices/${deviceId}/info`).then((response) =>{
-    //             return response.json();
-    //         }).then((response) =>{
-    //             setInfo(response);
-    //         })
-    //     };
-    //
-    //     loadInfo();
-    //
-    // }, [deviceId]);
-    //
-    // useEffect(() => {
-    //     const loadDiag = () => {
-    //         fetch(`/api/devices/${deviceId}/diag`).then((response) =>{
-    //             return response.json();
-    //         }).then((response) =>{
-    //             setDiag({
-    //                 uptime: humanizeDuration(response.uptime * 1000),
-    //                 lastSeen: response.lastSeen,
-    //                 memInfo: response.mem
-    //             });
-    //         })
-    //     };
-    //
-    //     loadDiag();
-    //     // save intervalId to clear the interval when the
-    //     // component re-renders
-    //     const intervalId = setInterval(() => {
-    //         loadDiag();
-    //     }, 30000);
-    //
-    //     // clear interval on re-render to avoid memory leaks
-    //     return () => clearInterval(intervalId);
-    //     // add timeLeft as a dependency to re-rerun the effect
-    //     // when we update it
-    // }, [deviceId]);
     useEffect(() => {
         devices.selectDevice(deviceId, (msg, data) => {
             switch (msg) {
@@ -132,6 +147,21 @@ export function Device({devices}) {
                         lastSeen: data.lastSeen,
                         memInfo: data.mem
                     });
+                    break;
+                case 'topics':
+                    setTopics(data.topics);
+                    break;
+                case 'values':
+                    setValues(data);
+                    break;
+                case 'value':
+                    let newValues = {...values};
+                    let itemValues = newValues[data.topic_path[0]];
+                    if (itemValues === undefined) {
+                        itemValues = newValues[data.topic_path[0]] = {}
+                    }
+                    itemValues[data.topic_path[1]] = data.value;
+                    setValues(newValues);
                     break;
                 default:
                     break;
@@ -155,6 +185,7 @@ export function Device({devices}) {
                 <NameValuePair name="IP Address"><a href={"http://" + info.ip_addr}>{info.ip_addr}</a></NameValuePair>
                 <NameValuePair name="Uptime">{diag.uptime}<LastSeen lastSeen={diag.lastSeen}/></NameValuePair>
                 <NameValuePair name="Memory Free"><MemoryInfo free={diag.memInfo.free} low={diag.memInfo.low}/> </NameValuePair>
+                <NameValuePair name="Publish Topics"><AllTopics alltopics={topics} values={values}></AllTopics></NameValuePair>
             </NameValueList>
         </PageContent>
     </Page>;

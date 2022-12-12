@@ -73,6 +73,9 @@ export class DeviceList {
             case 'diag':
             case 'info':
             case 'status':
+            case 'topics':
+            case 'values':
+            case 'value':
                 this.handleDeviceUpdate(msg);
                 break;
             default:

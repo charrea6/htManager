@@ -59,13 +59,7 @@ func (c *WebSocketConnection) handleConnection() {
 		switch request.Cmd {
 		case "selectDevice":
 			c.selectedDevice = request.Id
-			if diag := c.devices.GetDeviceDiag(request.Id); diag != nil {
-				c.sendUpdateMessage(devices.DeviceUpdateEvent{
-					Id:   request.Id,
-					Type: devices.DiagUpdateMessage,
-					Data: diag,
-				})
-			}
+			c.deviceSelected()
 			break
 		case "unselectDevice":
 			if c.selectedDevice == request.Id {
@@ -77,6 +71,31 @@ func (c *WebSocketConnection) handleConnection() {
 		}
 	}
 	log.Println("Finished ws receive")
+}
+
+func (c *WebSocketConnection) deviceSelected() {
+	if diag := c.devices.GetDeviceDiag(c.selectedDevice); diag != nil {
+		c.sendUpdateMessage(devices.DeviceUpdateEvent{
+			Id:   c.selectedDevice,
+			Type: devices.DiagUpdateMessage,
+			Data: diag,
+		})
+	}
+	if topics := c.devices.GetDeviceTopics(c.selectedDevice); topics != nil {
+		c.sendUpdateMessage(devices.DeviceUpdateEvent{
+			Id:   c.selectedDevice,
+			Type: devices.TopicsUpdateMessage,
+			Data: topics,
+		})
+	}
+
+	if values := c.devices.GetDeviceTopicValues(c.selectedDevice); values != nil {
+		c.sendUpdateMessage(devices.DeviceUpdateEvent{
+			Id:   c.selectedDevice,
+			Type: "values",
+			Data: values,
+		})
+	}
 }
 
 func (c *WebSocketConnection) DeviceUpdated(event devices.DeviceUpdateEvent) {
