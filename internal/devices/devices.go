@@ -32,17 +32,7 @@ type DeviceDiag struct {
 	TaskInfo []DeviceDiagStackInfo `json:"tasks,omitempty"`
 }
 
-type RawTopicInfo struct {
-	Name string `json:"name"`
-	Type int    `json:"type"`
-}
-
 type TopicInfo map[string]int
-
-type RawTopicDescription struct {
-	Pub []RawTopicInfo `json:"pubs"`
-	Sub []RawTopicInfo `json:"subs"`
-}
 
 type TopicDescription struct {
 	Pub TopicInfo `json:"pub"`
@@ -55,7 +45,7 @@ type RawElementTopicInfo struct {
 }
 
 type RawTopicsInfo struct {
-	TopicDescription []RawTopicDescription `json:"descriptions"`
+	TopicDescription []TopicDescription    `json:"descriptions"`
 	Topics           []RawElementTopicInfo `json:"elements"`
 }
 
@@ -133,8 +123,8 @@ func (d *devices) handleDeviceMessageTopics(deviceId string, payload []byte) {
 			}
 			rawTopicDescription := rawTopicsInfo.TopicDescription[elementInfo.Index]
 			topicsInfo.Topics[elementInfo.Name] = TopicDescription{
-				Pub: rawTopicDescription.getPubs(),
-				Sub: rawTopicDescription.getSubs(),
+				Pub: rawTopicDescription.Pub,
+				Sub: rawTopicDescription.Sub,
 			}
 		}
 		d.topicInfo[deviceId] = topicsInfo
@@ -176,22 +166,6 @@ func (d *RawDeviceInfo) toDeviceInfo(deviceId string, lastSeen *time.Time) Devic
 		LastSeen:     lastSeen,
 	}
 	return device
-}
-
-func (td *RawTopicDescription) getPubs() TopicInfo {
-	result := TopicInfo{}
-	for _, info := range td.Pub {
-		result[info.Name] = info.Type
-	}
-	return result
-}
-
-func (td *RawTopicDescription) getSubs() TopicInfo {
-	result := TopicInfo{}
-	for _, info := range td.Sub {
-		result[info.Name] = info.Type
-	}
-	return result
 }
 
 func (t *TopicsInfo) getPubTopicType(topic string) int {
