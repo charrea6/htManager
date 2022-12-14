@@ -126,6 +126,7 @@ export function Device({devices}) {
     const [diag, setDiag] = useState({lastSeen: null, uptime: "", memInfo: {free: 0, low: 0}});
     const [topics, setTopics] = useState({});
     const [values, setValues] = useState({});
+    const [status, setStatus] = useState("");
 
     let reboot = () => {
         const data = new URLSearchParams();
@@ -166,6 +167,9 @@ export function Device({devices}) {
                         }
                     );
                     break;
+                case 'status':
+                    setStatus(data);
+                    break;
                 default:
                     break;
             }
@@ -188,6 +192,7 @@ export function Device({devices}) {
                 <NameValuePair name="IP Address"><a href={"http://" + info.ip_addr}>{info.ip_addr}</a></NameValuePair>
                 <NameValuePair name="Uptime">{diag.uptime}<LastSeen lastSeen={diag.lastSeen}/></NameValuePair>
                 <NameValuePair name="Memory Free"><MemoryInfo free={diag.memInfo.free} low={diag.memInfo.low}/> </NameValuePair>
+                <NameValuePair name="Status">{status}</NameValuePair>
                 <NameValuePair name="Publish Topics"><AllTopics alltopics={topics} values={values}></AllTopics></NameValuePair>
             </NameValueList>
         </PageContent>
