@@ -3,6 +3,8 @@ package devices
 import (
 	"encoding/json"
 	"errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"log"
 	"strings"
 	"time"
@@ -58,6 +60,16 @@ const InvalidTopicType = -1
 var (
 	InvalidPubTopicError        = errors.New("invalid pub topic")
 	InvalidTypeForPubTopicError = errors.New("invalid topic type for pub topic")
+	memoryGaugeVec              = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "homething",
+		Name:      "memory",
+		Help:      "Amount of memory available in the device",
+	}, []string{"id", "description", "type"})
+	uptimeGaugeVec = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "homething",
+		Name:      "uptime",
+		Help:      "uptime of the device",
+	}, []string{"id", "description", "version"})
 )
 
 func (d *devices) handleDeviceMessage(deviceId string, topic string, payload []byte) {
@@ -95,7 +107,11 @@ func (d *devices) handleDeviceMessageDiag(deviceId string, payload []byte) {
 		now := time.Now()
 		diag.LastSeen = &now
 		d.diag[deviceId] = diag
-
+		if info, ok := d.info[deviceId]; ok {
+			uptimeGaugeVec.WithLabelValues(deviceId, info.Description, info.Version).Set(float64(diag.Uptime))
+			memoryGaugeVec.WithLabelValues(deviceId, info.Description, "free").Set(float64(diag.MemInfo.Free))
+			memoryGaugeVec.WithLabelValues(deviceId, info.Description, "low").Set(float64(diag.MemInfo.Low))
+		}
 		d.sendUpdateMessage(deviceId, DiagUpdateMessage, diag)
 	}
 }
