@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"htManager/internal/devices"
+	"htManager/internal/updates"
 	"io"
 	"log"
 	"net/http"
@@ -30,13 +31,17 @@ type CommandResponse struct {
 	Status string `json:"status"`
 }
 
+type VersionsResponse struct {
+	Versions []string `json:"versions"`
+}
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
 
-func initAPI(group *gin.RouterGroup, devices devices.Devices) {
+func initAPI(group *gin.RouterGroup, devices devices.Devices, updateManager updates.UpdateManager) {
 	group.GET("/devices", func(context *gin.Context) {
 		context.JSON(http.StatusOK, devices.GetDevices())
 	})
@@ -109,6 +114,18 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices) {
 			}
 		default:
 			context.JSON(http.StatusInternalServerError, ErrorResponse{Error: "unknown command"})
+		}
+	})
+
+	group.GET("/devices/:deviceId/update/versions", func(context *gin.Context) {
+		deviceId := context.Param("deviceId")
+		if info := devices.GetDeviceInfo(deviceId); info == nil {
+			context.Status(http.StatusNotFound)
+		} else {
+			response := VersionsResponse{
+				Versions: updateManager.AvailableUpdatesForDevice(info),
+			}
+			context.JSON(http.StatusOK, response)
 		}
 	})
 

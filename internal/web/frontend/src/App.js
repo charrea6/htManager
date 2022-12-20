@@ -11,6 +11,7 @@ import { Device } from './pages/device';
 import { EditProfile } from './pages/profile';
 import { ErrorPage } from './error-page';
 import {DeviceList} from "./Devices";
+import {UpdateDevice} from "./pages/update";
 
 
 const deviceList = new DeviceList();
@@ -31,7 +32,12 @@ const router = createBrowserRouter([
       },
       {
         path: 'device/:deviceId/profile',
-        element: <EditProfile />
+        element: <EditProfile devices={deviceList}/>
+      },
+      {
+        path: 'device/:deviceId/update',
+        element: <UpdateDevice devices={deviceList}/>
+
       }
     ]
   },

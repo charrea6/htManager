@@ -36,6 +36,15 @@ export class DeviceList {
         this.ws.send(JSON.stringify({'cmd': 'unselectDevice', 'id': deviceId}));
     }
 
+    getDeviceInfo(deviceId) {
+        for (const d of this.devices) {
+            if (d.id === deviceId) {
+                return d;
+            }
+        }
+        return null;
+    }
+
     connectWS() {
         let loc = window.location, protocol;
         if (loc.protocol === "https:") {
@@ -49,6 +58,8 @@ export class DeviceList {
             if (this.pending != null) {
                 this.pending();
                 this.pending = null;
+            } else if (this.selectedDevice !== null) {
+                this.ws.send(JSON.stringify({'cmd': 'selectDevice', 'id': this.selectedDevice}));
             }
         }
         this.ws.onclose = () => {
@@ -85,7 +96,6 @@ export class DeviceList {
     }
 
     handleInit(devices) {
-        console.log(`Got devices ${devices}`);
         this.devices = devices;
         if (this.deviceListUpdated != null) {
             this.deviceListUpdated(devices);

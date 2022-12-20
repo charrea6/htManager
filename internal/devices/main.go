@@ -22,6 +22,8 @@ type DeviceInfo struct {
 	Description  string     `json:"description"`
 	IPAddr       string     `json:"ip_addr"`
 	Version      string     `json:"version"`
+	DeviceType   string     `json:"deviceType"`
+	Memory       uint       `json:"memory"`
 	Capabilities []string   `json:"capabilities"`
 }
 
@@ -204,7 +206,14 @@ func (d *devices) RebootDevice(deviceId string) error {
 }
 
 func (d *devices) UpdateDevice(deviceId string, version string) error {
-	return fmt.Errorf("not implemented")
+	t := d.client.Publish(fmt.Sprintf("homething/%s/device/ctrl", deviceId), 0, false, []byte("update "+version))
+	if !t.WaitTimeout(10 * time.Second) {
+		return fmt.Errorf("timeout waiting for response from broker")
+	}
+	if err := t.Error(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (d *devices) RegisterUpdateNotificationClient(client UpdateNotificationClient) {

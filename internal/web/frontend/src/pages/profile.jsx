@@ -12,7 +12,7 @@ import {
 import {Upload,} from "grommet-icons";
 import {useEffect, useState} from "react";
 
-export function EditProfile() {
+export function EditProfile({devices}) {
     let { deviceId } = useParams();
     let navigate = useNavigate();
     let toRoot = () => {
@@ -32,18 +32,12 @@ export function EditProfile() {
             } ).catch(() => { setStatus('Profile update failed')});
     }
 
-    const [info, setInfo] = useState({capabilities:[]});
+    let device = devices.getDeviceInfo(deviceId);
+    let description = device == null ? "": device.description;
+
     const [profile, setProfile] = useState("");
     const [status, setStatus] = useState("");
     useEffect(() => {
-        const loadInfo = () => {
-            fetch(`/api/devices/${deviceId}/info`).then((response) =>{
-                return response.json();
-            }).then((response) =>{
-                setInfo(response);
-            })
-        };
-
         const loadProfile = () => {
             fetch(`/api/devices/${deviceId}/profile`).then((response) =>{
                 return response.json();
@@ -51,13 +45,12 @@ export function EditProfile() {
                 setProfile(response.profile);
             })
         };
-        loadInfo();
         loadProfile();
     }, [deviceId]);
 
     return <Page>
         <PageContent height={"large"}>
-            <PageHeader title={info.description} parent={<Anchor label="Back" onClick={toRoot}/>} actions={<Box direction="row" gap="xsmall">
+            <PageHeader title={description} subtitle={"Edit Profile"} parent={<Anchor label="Back" onClick={toRoot}/>} actions={<Box direction="row" gap="xsmall">
                 <Text alignSelf="center">{status}</Text>
                 <Button plain={false} icon={<Upload/>} title={"Update"} onClick={updateProfile}/>
             </Box> }/>

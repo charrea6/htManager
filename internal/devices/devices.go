@@ -13,23 +13,25 @@ import (
 type RawDeviceInfo struct {
 	IpAddr       string `json:"ip"`
 	Description  string `json:"description"`
+	Device       string `json:"device"`
+	Memory       uint   `json:"mem"`
 	Version      string `json:"version"`
 	Capabilities string `json:"capabilities"`
 }
 
 type DeviceDiagMemInfo struct {
-	Free int `json:"free"`
-	Low  int `json:"low"`
+	Free uint `json:"free"`
+	Low  uint `json:"low"`
 }
 
 type DeviceDiagStackInfo struct {
 	Name         string `json:"name"`
-	StackMinLeft int    `json:"stackMinLeft"`
+	StackMinLeft uint   `json:"stackMinLeft"`
 }
 
 type DeviceDiag struct {
 	LastSeen *time.Time            `json:"lastSeen,omitempty"`
-	Uptime   int                   `json:"uptime"`
+	Uptime   uint                  `json:"uptime"`
 	MemInfo  DeviceDiagMemInfo     `json:"mem"`
 	TaskInfo []DeviceDiagStackInfo `json:"tasks,omitempty"`
 }
@@ -178,6 +180,8 @@ func (d *RawDeviceInfo) toDeviceInfo(deviceId string, lastSeen *time.Time) Devic
 		Description:  d.Description,
 		IPAddr:       d.IpAddr,
 		Version:      d.Version,
+		DeviceType:   d.Device,
+		Memory:       d.Memory * 1024,
 		Capabilities: strings.Split(d.Capabilities, ","),
 		LastSeen:     lastSeen,
 	}
@@ -219,4 +223,13 @@ func (t *TopicsInfo) convertPubTopicValue(topic string, data []byte) (any, error
 		break
 	}
 	return nil, InvalidTypeForPubTopicError
+}
+
+func (i *DeviceInfo) HasCapability(wanted string) bool {
+	for _, cap := range i.Capabilities {
+		if cap == wanted {
+			return true
+		}
+	}
+	return false
 }
