@@ -33,7 +33,7 @@ func (u *updateManagerImpl) AvailableUpdatesForDevice(deviceInfo *devices.Device
 func findMatches(files []os.DirEntry, deviceInfo *devices.DeviceInfo) []string {
 	expStr := `homething\.` + deviceInfo.DeviceType + `\.`
 	if deviceInfo.HasCapability(flash1MB) {
-		expStr = expStr + `app([01])\.`
+		expStr = expStr + `app([12])\.`
 	}
 	expStr += `(.+)\.ota`
 	exp := regexp.MustCompile(expStr)
@@ -54,7 +54,7 @@ func findMatches(files []os.DirEntry, deviceInfo *devices.DeviceInfo) []string {
 		versionsToAppN := make(map[string]int)
 		for _, match := range matches {
 			appN := 2
-			if match[1] == "0" {
+			if match[1] == "1" {
 				appN = 1
 			}
 			if currentAppN, ok := versionsToAppN[match[2]]; ok {

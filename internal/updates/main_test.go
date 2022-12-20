@@ -87,8 +87,8 @@ func Test_findMatches(t *testing.T) {
 			args: args{
 				files: []os.DirEntry{
 					NewFakeDirEntryFile("homething.esp8266.app1.v1.0.0.ota"),
-					NewFakeDirEntryFile("homething.esp8266.app0.v1.0.0.ota"),
-					NewFakeDirEntryFile("homething.esp8266.app0.v1.1.0.ota"),
+					NewFakeDirEntryFile("homething.esp8266.app2.v1.0.0.ota"),
+					NewFakeDirEntryFile("homething.esp8266.app2.v1.1.0.ota"),
 					NewFakeDirEntryFile("homething.esp8266.app1.v1.1.0.ota"),
 					NewFakeDirEntryFile("homething.esp8266.app1.v2.0.0.ota"),
 				},
