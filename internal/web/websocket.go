@@ -105,7 +105,16 @@ func (c *WebSocketConnection) DeviceUpdated(event devices.DeviceUpdateEvent) {
 			return
 		}
 	}
-	if event.Type == devices.DiagUpdateMessage {
+	switch event.Type {
+	case devices.InfoUpdateMessage:
+		if event.Id != c.selectedDevice {
+			if err := c.sendUpdateMessage(event); err != nil {
+				log.Printf("Error while sending ws message: %s", err)
+				return
+			}
+		}
+		break
+	case devices.DiagUpdateMessage:
 		if diag, ok := event.Data.(devices.DeviceDiag); ok {
 			lastSeen := LastSeenUpdate{LastSeen: diag.LastSeen}
 			msg := devices.DeviceUpdateEvent{
@@ -118,6 +127,9 @@ func (c *WebSocketConnection) DeviceUpdated(event devices.DeviceUpdateEvent) {
 				return
 			}
 		}
+		break
+	default:
+		break
 	}
 }
 

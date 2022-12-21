@@ -129,5 +129,18 @@ export class DeviceList {
         if (msg.id === this.selectedDevice) {
             this.deviceUpdated(msg.type, msg.data);
         }
+        if (msg.type === 'info') {
+            let devices = [];
+            this.devices.forEach((value) => {
+                if (value.id === msg.id) {
+                    value = msg.data;
+                }
+                devices.push(value)
+            });
+            this.devices = devices;
+            if (this.deviceListUpdated != null) {
+                this.deviceListUpdated(this.devices);
+            }
+        }
     }
 }
