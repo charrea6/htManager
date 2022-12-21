@@ -3,6 +3,7 @@ package devices
 import (
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"math/rand"
 	"regexp"
 	"sync"
 	"time"
@@ -78,7 +79,7 @@ func NewDevices(connection string) Devices {
 	}
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(connection)
-	opts.SetClientID("htManager")
+	opts.SetClientID(fmt.Sprintf("htManager-%d", rand.Int()))
 	opts.SetDefaultPublishHandler(devices.handleMessage)
 	opts.SetAutoReconnect(true)
 	opts.OnConnect = devices.handleConnect
