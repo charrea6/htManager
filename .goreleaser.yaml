@@ -1,0 +1,26 @@
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+archives:
+  -
+    format: binary
+    name_template: "{{ .Binary }}-{{ .Os }}-{{ .Arch }}"
+
+release:
+  prerelease: auto
+  github:
+    owner: spvss-ivp
+    name: tfsecIssueManager
+
+# modelines, feel free to remove those if you don't want/use them:
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
