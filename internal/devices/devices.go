@@ -126,14 +126,7 @@ func (d *devices) handleDeviceMessageStatus(deviceId string, payload []byte) {
 
 func (d *devices) handleDeviceMessageTopics(deviceId string, payload []byte) {
 	rawTopicsInfo := RawTopicsInfo{}
-	if deviceId == "5ccf7f0a70dd" {
-		log.Printf("5ccf7f0a70dd: Topics payload %s\n", string(payload))
-	}
 	if err := json.Unmarshal(payload, &rawTopicsInfo); err == nil {
-		if deviceId == "5ccf7f0a70dd" {
-			log.Printf("5ccf7f0a70dd: Topics rawTopicsInfo %q\n", rawTopicsInfo)
-		}
-
 		topicsInfo := TopicsInfo{Topics: make(map[string]TopicDescription)}
 		for _, elementInfo := range rawTopicsInfo.Topics {
 			if elementInfo.Index < 0 || elementInfo.Index > len(rawTopicsInfo.TopicDescription) {
@@ -166,7 +159,6 @@ func (d *devices) sendUpdateMessage(deviceId string, updateType string, data any
 		Type: updateType,
 		Data: data,
 	}
-	log.Printf("Sending update message: %s for %s", updateType, deviceId)
 	d.lock.Lock()
 	for _, client := range d.updateClients {
 		client.DeviceUpdated(event)
