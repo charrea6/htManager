@@ -72,6 +72,11 @@ var (
 		Name:      "uptime",
 		Help:      "uptime of the device",
 	}, []string{"id", "description", "version"})
+	rebootCounterVec = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "homething",
+		Name:      "reboots",
+		Help:      "Number of times the device has rebooted",
+	}, []string{"id", "description"})
 )
 
 func (d *devices) handleDeviceMessage(deviceId string, topic string, payload []byte) {
@@ -97,6 +102,17 @@ func (d *devices) handleDeviceMessage(deviceId string, topic string, payload []b
 func (d *devices) handleDeviceMessageInfo(deviceId string, payload []byte) {
 	info := RawDeviceInfo{}
 	if json.Unmarshal(payload, &info) == nil {
+		if prev, ok := d.info[deviceId]; ok {
+			if prev.Description != info.Description {
+				matchTo := prometheus.Labels{"id": deviceId}
+				uptimeGaugeVec.DeletePartialMatch(matchTo)
+				memoryGaugeVec.DeletePartialMatch(matchTo)
+				rebootCounterVec.DeletePartialMatch(matchTo)
+			}
+			if prev.Version != info.Version {
+				uptimeGaugeVec.DeletePartialMatch(prometheus.Labels{"id": deviceId})
+			}
+		}
 		d.info[deviceId] = info
 		now := time.Now()
 		d.sendUpdateMessage(deviceId, InfoUpdateMessage, info.toDeviceInfo(deviceId, &now))
@@ -108,11 +124,19 @@ func (d *devices) handleDeviceMessageDiag(deviceId string, payload []byte) {
 	if json.Unmarshal(payload, &diag) == nil {
 		now := time.Now()
 		diag.LastSeen = &now
+		reboot := false
+		if prev, ok := d.diag[deviceId]; ok && prev.Uptime > diag.Uptime {
+			reboot = true
+		}
 		d.diag[deviceId] = diag
 		if info, ok := d.info[deviceId]; ok {
 			uptimeGaugeVec.WithLabelValues(deviceId, info.Description, info.Version).Set(float64(diag.Uptime))
 			memoryGaugeVec.WithLabelValues(deviceId, info.Description, "free").Set(float64(diag.MemInfo.Free))
 			memoryGaugeVec.WithLabelValues(deviceId, info.Description, "low").Set(float64(diag.MemInfo.Low))
+			counter := rebootCounterVec.WithLabelValues(deviceId, info.Description)
+			if reboot {
+				counter.Inc()
+			}
 		}
 		d.sendUpdateMessage(deviceId, DiagUpdateMessage, diag)
 	}
