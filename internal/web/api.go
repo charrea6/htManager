@@ -46,6 +46,15 @@ func initAPI(group *gin.RouterGroup, devices devices.Devices, updateManager upda
 		context.JSON(http.StatusOK, devices.GetDevices())
 	})
 
+	group.DELETE("/devices/:deviceId", func(context *gin.Context) {
+		deviceId := context.Param("deviceId")
+		if err := devices.RemoveDevice(deviceId); err != nil {
+			context.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		} else {
+			context.JSON(http.StatusOK, map[string]string{})
+		}
+	})
+
 	group.GET("/devices/:deviceId/info", func(context *gin.Context) {
 		deviceId := context.Param("deviceId")
 		if info := devices.GetDeviceInfo(deviceId); info == nil {

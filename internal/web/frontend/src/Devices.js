@@ -142,5 +142,17 @@ export class DeviceList {
                 this.deviceListUpdated(this.devices);
             }
         }
+        if (msg.type === 'removed') {
+            let devices = [];
+            this.devices.forEach((value) => {
+                if (value.id !== msg.id) {
+                    devices.push(value)
+                }
+            });
+            this.devices = devices;
+            if (this.deviceListUpdated != null) {
+                this.deviceListUpdated(this.devices);
+            }
+        }
     }
 }

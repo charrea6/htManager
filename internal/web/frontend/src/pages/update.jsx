@@ -31,6 +31,7 @@ export function UpdateDevice({devices}) {
                 setStatus(response.error);
             } else {
                 setStatus("");
+                toRoot();
             }
         })
     }

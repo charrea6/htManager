@@ -128,6 +128,11 @@ func (c *WebSocketConnection) DeviceUpdated(event devices.DeviceUpdateEvent) {
 			}
 		}
 		break
+	case devices.DeviceRemovedMessage:
+		if err := c.sendUpdateMessage(event); err != nil {
+			log.Printf("Error while sending ws message: %s", err)
+			return
+		}
 	default:
 		break
 	}

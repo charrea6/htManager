@@ -10,11 +10,12 @@ import (
 )
 
 const (
-	InfoUpdateMessage   = "info"
-	DiagUpdateMessage   = "diag"
-	TopicsUpdateMessage = "topics"
-	ValueUpdateMessage  = "value"
-	StatusUpdateMessage = "status"
+	InfoUpdateMessage    = "info"
+	DiagUpdateMessage    = "diag"
+	TopicsUpdateMessage  = "topics"
+	ValueUpdateMessage   = "value"
+	StatusUpdateMessage  = "status"
+	DeviceRemovedMessage = "removed"
 )
 
 type DeviceInfo struct {
@@ -40,6 +41,7 @@ type UpdateNotificationClient interface {
 
 type Devices interface {
 	GetDevices() []DeviceInfo
+	RemoveDevice(deviceId string) error
 	GetDeviceInfo(deviceId string) *DeviceInfo
 	GetDeviceDiag(deviceId string) *DeviceDiag
 	GetDeviceStatus(deviceId string) *string
@@ -232,4 +234,60 @@ func (d *devices) UnregisterUpdateNotificationClient(client UpdateNotificationCl
 		}
 	}
 	d.lock.Unlock()
+}
+
+func (d *devices) RemoveDevice(deviceId string) error {
+	if !d.isDeviceKnown(deviceId) {
+		return fmt.Errorf("device %s not found", deviceId)
+	}
+	delete(d.info, deviceId)
+	delete(d.diag, deviceId)
+	delete(d.status, deviceId)
+	delete(d.profile, deviceId)
+	delete(d.topicInfo, deviceId)
+	topicValues := d.topicValues[deviceId]
+	delete(d.topicValues, deviceId)
+	for primaryTopic, topicValues := range topicValues {
+		for topic, _ := range topicValues {
+			var topicPath string
+			if topic == "" {
+				topicPath = fmt.Sprintf("homething/%s/%s", deviceId, primaryTopic)
+			} else {
+				topicPath = fmt.Sprintf("homething/%s/%s/%s", deviceId, primaryTopic, topic)
+			}
+
+			t := d.client.Publish(topicPath, 0, true, []byte{})
+			if !t.WaitTimeout(10 * time.Second) {
+				return fmt.Errorf("timeout waiting for response from broker")
+			}
+			if err := t.Error(); err != nil {
+				return err
+			}
+		}
+	}
+	for _, topic := range []string{"diag", "status", "profile", "topics", "info"} {
+		topicPath := fmt.Sprintf("homething/%s/device/%s", deviceId, topic)
+		t := d.client.Publish(topicPath, 0, true, []byte{})
+		if !t.WaitTimeout(10 * time.Second) {
+			return fmt.Errorf("timeout waiting for response from broker")
+		}
+		if err := t.Error(); err != nil {
+			return err
+		}
+	}
+	d.cleanupHomeAssistant(deviceId)
+	d.sendUpdateMessage(deviceId, DeviceRemovedMessage, nil)
+	return nil
+}
+
+func (d *devices) cleanupHomeAssistant(deviceId string) {
+	topic := fmt.Sprintf("homeassistant/+/%s/#", deviceId)
+	d.client.Subscribe(topic, 0, func(client mqtt.Client, message mqtt.Message) {
+		if message.Retained() && len(message.Payload()) > 0 {
+			d.client.Publish(message.Topic(), 0, true, []byte{})
+		}
+	})
+	time.AfterFunc(10*time.Second, func() {
+		d.client.Unsubscribe(topic)
+	})
 }

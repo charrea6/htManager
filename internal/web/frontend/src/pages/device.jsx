@@ -16,7 +16,7 @@ import {
     TableRow,
     TableCell
 } from 'grommet';
-import {Update, Upload, Edit} from "grommet-icons";
+import {Update, Upload, Edit, Trash} from "grommet-icons";
 import {useEffect, useState} from "react";
 import * as dayjs from "dayjs";
 import * as relativeTime from "dayjs/plugin/relativeTime";
@@ -177,6 +177,7 @@ export function Device({devices}) {
                 <Button plain={false} icon={<Update/>} title={"Reboot"} onClick={reboot}/>
                 <Button plain={false} icon={<Upload/>} title={"Update"} onClick={ ()=>{ navigate(`/device/${deviceId}/update`);}}/>
                 <Button plain={false} icon={<Edit/>} title={"Edit Profile"} onClick={ ()=>{ navigate(`/device/${deviceId}/profile`);} }/>
+                <Button plain={false} icon={<Trash/>} title={"Delete"} onClick={ ()=>{ navigate(`/device/${deviceId}/delete`);} }/>
             </Box> }/>
             <NameValueList valueProps={{ width: 'large' }}>
                 <NameValuePair name="ID">{deviceId}</NameValuePair>
